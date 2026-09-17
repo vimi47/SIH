@@ -4,7 +4,20 @@ import math
 import pandas as pd
 from typing import List, Dict, Any, Optional
 
-DATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/bhoomirashi_projects_clean.csv'))
+def _find_data_file() -> str:
+    candidates = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/bhoomirashi_projects_clean.csv')),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/bhoomirashi_projects_clean.csv')),
+        os.path.abspath(os.path.join(os.getcwd(), 'data/bhoomirashi_projects_clean.csv')),
+        os.path.abspath(os.path.join(os.getcwd(), 'backend/data/bhoomirashi_projects_clean.csv')),
+        os.path.abspath(os.path.join(os.getcwd(), 'bhoomirashi_projects_clean.csv')),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return candidates[0]
+
+DATA_PATH = _find_data_file()
 
 STATE_PATTERNS = [
     ("Jammu and Kashmir", re.compile(r"Jammu|Kashmir|J&K|JK|Ladakh|Srinagar|Akhnoor|Poonch", re.I), 33.7782, 76.5762),

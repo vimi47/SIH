@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = `${rawBase.replace(/\/+$/, '')}/api`;
 
 export async function fetchFromApi<T>(endpoint: string, options?: RequestInit): Promise<T | null> {
   try {

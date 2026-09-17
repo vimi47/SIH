@@ -63,6 +63,14 @@ class PredictRequest(BaseModel):
     num_3A: int = 2
     days_3a_to_3A: float = 60.0
 
+@app.get("/")
+def root():
+    return {
+        "message": "BhoomiRaksha AI Backend API is active",
+        "docs_url": "/docs",
+        "health_url": "/api/health"
+    }
+
 @app.get("/api/health")
 def health_check():
     return {
@@ -145,5 +153,6 @@ def data_quality():
 
 if __name__ == "__main__":
     import uvicorn
+    port = int(os.environ.get("PORT", 8000))
     target = "main:app" if os.path.exists("main.py") else "backend.main:app"
-    uvicorn.run(target, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(target, host="0.0.0.0", port=port, reload=False)
