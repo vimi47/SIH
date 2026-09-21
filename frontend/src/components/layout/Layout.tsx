@@ -1,15 +1,14 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 export const Layout: React.FC = () => {
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div className="min-h-screen bg-[#f5f8fc] text-slate-900">
+      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.6)),radial-gradient(circle_at_top_left,rgba(13,71,161,0.08),transparent_32%),radial-gradient(circle_at_top_right,rgba(2,132,199,0.06),transparent_22%)]" />
+      <div className="relative z-10 flex min-h-screen flex-col">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 px-4 pb-6 pt-3 md:px-8 md:pb-10 md:pt-5">
           <Outlet />
         </main>
       </div>

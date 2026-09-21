@@ -1,69 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Bell, Calendar, HelpCircle, ExternalLink, Server } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { backendApi } from '../../services/api';
+import React from 'react';
+import { Link, NavLink } from 'react-router-dom';
+import { LogOut, Search, Shield, LayoutDashboard, FolderKanban, ChartColumnBig, FileText, MapPinned, PlaySquare, BookA } from 'lucide-react';
+import { useAuth } from '../../auth/AuthContext';
 
 export const Header: React.FC = () => {
-  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
+  const { user, logout } = useAuth();
 
-  useEffect(() => {
-    backendApi.getHealth().then(res => {
-      setBackendOnline(res?.status === 'HEALTHY');
-    });
-  }, []);
+  const navItems = [
+    { to: '/', label: 'Overview', icon: LayoutDashboard, roles: ['ADMIN', 'ANALYST', 'OFFICER', 'VIEWER'] as const },
+    { to: '/projects', label: 'Projects', icon: FolderKanban, roles: ['ADMIN', 'ANALYST', 'OFFICER', 'VIEWER'] as const },
+    { to: '/map', label: 'Map', icon: MapPinned, roles: ['ADMIN', 'ANALYST', 'OFFICER', 'VIEWER'] as const },
+    { to: '/simulate', label: 'Simulation', icon: PlaySquare, roles: ['ADMIN', 'ANALYST', 'OFFICER'] as const },
+    { to: '/analytics', label: 'Analytics', icon: ChartColumnBig, roles: ['ADMIN', 'ANALYST', 'OFFICER', 'VIEWER'] as const },
+    { to: '/reports', label: 'Reports', icon: FileText, roles: ['ADMIN', 'ANALYST', 'OFFICER', 'VIEWER'] as const },
+    { to: '/audit', label: 'Audit', icon: BookA, roles: ['ADMIN'] as const },
+  ].filter(item => user ? item.roles.includes(user.role as any) : false);
+
   return (
-    <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-20 flex-shrink-0">
-      <div className="flex items-center gap-4 flex-1 max-w-xl">
-        <div className="relative w-full">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search projects, districts, national highways, notification IDs..."
-            className="w-full pl-9 pr-4 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-          />
+    <header className="sticky top-0 z-20 px-4 pt-4 md:px-8 md:pt-6 flex-shrink-0">
+      <div className="rounded-[24px] border border-white/70 bg-white/92 backdrop-blur-xl shadow-[0_10px_30px_rgba(15,23,42,0.06)] px-4 py-3 md:px-5 md:py-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-center gap-3">
+              <Link to="/" className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-2xl bg-white border border-blue-100 shadow-sm shadow-blue-100 flex items-center justify-center overflow-hidden p-1.5">
+                  <img
+                    src="/indian-emblem.png"
+                    alt="State Emblem of India"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.24em] text-slate-500 font-semibold">Government portal</div>
+                  <div className="text-base font-semibold tracking-tight text-slate-900">BhoomiRaksha</div>
+                  <div className="text-[11px] text-slate-500">Land acquisition and project monitoring</div>
+                </div>
+              </Link>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+              {user && (
+                <div className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
+                  <span className="font-semibold text-slate-900">{user.name}</span> · {user.role}
+                </div>
+              )}
+              <a
+                href="https://bhoomirashi.gov.in"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-full bg-[#0b4ea2] px-3.5 py-2 text-xs font-medium text-white shadow-sm hover:bg-[#083a7a]"
+              >
+                <Shield className="w-3.5 h-3.5" />
+              </a>
+              {user && (
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 hover:border-slate-300 hover:text-slate-900"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Logout
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-slate-100 pt-3 lg:flex-row lg:items-center lg:justify-between">
+            <nav className="flex flex-wrap items-center gap-2">
+              {navItems.map(item => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === '/'}
+                    className={({ isActive }) =>
+                      `inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${isActive ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'}`
+                    }
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </nav>
+
+            <div className="relative w-full lg:max-w-md">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search project, district, or ID..."
+                className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-4 text-sm placeholder:text-slate-400 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+              />
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className={`hidden md:flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md border ${
-          backendOnline
-            ? 'text-emerald-800 bg-emerald-50 border-emerald-200'
-            : 'text-amber-800 bg-amber-50 border-amber-200'
-        }`}>
-          <Server className="w-3.5 h-3.5" />
-          <span>Backend ML Engine: {backendOnline ? 'ONLINE (:8000)' : 'CONNECTING...'}</span>
-          <span className={`w-2 h-2 rounded-full ${backendOnline ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></span>
-        </div>
-
-        <div className="hidden lg:flex items-center gap-1.5 text-xs font-semibold text-blue-800 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
-          <span>BhoomiRashi (2,540 Projects)</span>
-        </div>
-
-        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200">
-          <Calendar className="w-3.5 h-3.5 text-blue-600" />
-          <span>16 Sep 2026</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1"></span>
-          <span className="text-[10px] text-emerald-700 font-semibold">LIVE</span>
-        </div>
-
-        <Link
-          to="/early-warnings"
-          className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Alerts"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
-        </Link>
-
-        <a
-          href="https://bhoomirashi.gov.in"
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 hover:bg-blue-50 rounded"
-        >
-          <span>BhoomiRashi Portal</span>
-          <ExternalLink className="w-3 h-3" />
-        </a>
       </div>
     </header>
   );

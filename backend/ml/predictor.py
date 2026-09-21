@@ -17,7 +17,18 @@ def get_model():
 
 def get_metrics():
     bundle = get_model()
-    return bundle.get("metrics", {})
+    metrics = dict(bundle.get("metrics", {}))
+    if "r2_score" not in metrics:
+        metrics["r2_score"] = metrics.get("r2Score")
+    if "rmse" not in metrics:
+        metrics["rmse"] = metrics.get("rmseDays")
+    if "mae" not in metrics:
+        metrics["mae"] = metrics.get("maeDays")
+    if "roc_auc" not in metrics:
+        metrics["roc_auc"] = metrics.get("rocAuc")
+    if "feature_importances" not in metrics:
+        metrics["feature_importances"] = metrics.get("featureImportances", [])
+    return metrics
 
 def predict_delay(features: dict) -> dict:
     bundle = get_model()

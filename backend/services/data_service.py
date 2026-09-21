@@ -233,3 +233,41 @@ def get_data_quality_report() -> Dict[str, Any]:
             {"field": "BhoomiRashi Live Gazette URL", "missingCount": 0, "completenessPct": 100.0, "status": "OPTIMAL"}
         ]
     }
+
+def get_priority_projects(limit: int = 5) -> List[Dict[str, Any]]:
+    all_p = _load_projects()
+    severity_rank = {
+        "CRITICAL": 0,
+        "HIGH": 1,
+        "MEDIUM": 2,
+        "LOW": 3,
+    }
+
+    ordered = sorted(
+        all_p,
+        key=lambda p: (
+            severity_rank.get(p.get("risk_category", "LOW"), 4),
+            -int(p.get("predicted_delay_days", 0)),
+            -int(p.get("risk_score", 0)),
+        )
+    )
+    return ordered[:limit]
+
+def get_project_locations() -> List[Dict[str, Any]]:
+    all_p = _load_projects()
+    return [
+        {
+            "project_id": p["project_id"],
+            "project_name": p["project_name"],
+            "state": p["state"],
+            "district": p["district"],
+            "risk_category": p["risk_category"],
+            "risk_score": p["risk_score"],
+            "predicted_delay_days": p["predicted_delay_days"],
+            "predicted_delay_months": p["predicted_delay_months"],
+            "latitude": p["latitude"],
+            "longitude": p["longitude"],
+            "source_url": p["source_url"],
+        }
+        for p in all_p
+    ]
