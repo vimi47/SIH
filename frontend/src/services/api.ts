@@ -41,7 +41,31 @@ export async function fetchFromApi<T>(endpoint: string, options?: RequestInit): 
 
 export const backendApi = {
   getHealth: () => fetchFromApi<{ status: string; engine: string }>('/health'),
-  getSummary: () => fetchFromApi<any>('/summary'),
+  getSummary: async () => {
+    const direct = await fetchFromApi<any>('/summary');
+    if (direct) return direct;
+    // Fallback: If deployed backend is still on previous version without /api/summary
+    try {
+      const [kpis, projectsRes, warnings, interventions] = await Promise.all([
+        fetchFromApi<any>('/kpis'),
+        fetchFromApi<any>('/projects?page=1&page_size=5'),
+        fetchFromApi<any[]>('/early-warnings'),
+        fetchFromApi<any[]>('/interventions'),
+      ]);
+      if (kpis || projectsRes) {
+        return {
+          health: { status: 'HEALTHY' },
+          kpis: kpis || {},
+          priority_projects: projectsRes?.items || projectsRes?.projects || [],
+          warnings: (warnings || []).slice(0, 5),
+          interventions: (interventions || []).slice(0, 5),
+        };
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  },
   getKpis: () => fetchFromApi<any>('/kpis'),
   getProjects: (params: { search?: string; state?: string; agency?: string; risk?: string; page?: number; page_size?: number }) => {
     const query = new URLSearchParams();
@@ -54,7 +78,23 @@ export const backendApi = {
     return fetchFromApi<any>(`/projects?${query.toString()}`);
   },
   getProjectById: (id: string) => fetchFromApi<any>(`/projects/${id}`),
-  getProjectLocations: () => fetchFromApi<any[]>('/map/projects'),
+  getProjectLocations: async () => {
+    const direct = await fetchFromApi<any[]>('/map/projects');
+    if (Array.isArray(direct) && direct.length > 0) return direct;
+    // Fallback: If deployed backend lacks /api/map/projects, pull from /api/projects
+    try {
+      const fallback = await fetchFromApi<any>('/projects?page_size=500');
+      if (fallback?.items && Array.isArray(fallback.items)) {
+        return fallback.items;
+      }
+      if (Array.isArray(fallback)) {
+        return fallback;
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  },
   simulateWhatIf: (payload: { project_id: string; legal_cases: number; compensation_progress: number; approval_days: number; rr_progress: number }) => {
     return fetchFromApi<any>('/simulate', {
       method: 'POST',

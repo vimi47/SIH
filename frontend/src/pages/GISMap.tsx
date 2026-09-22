@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { backendApi } from '../services/api';
 
 const RISK_COLOR: Record<string, string> = {
@@ -11,26 +12,30 @@ const RISK_COLOR: Record<string, string> = {
 
 export const GISMap: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef   = useRef<L.Map | null>(null);
-  const markerLayerRef   = useRef<L.FeatureGroup | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markerLayerRef = useRef<L.FeatureGroup | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
-  const [loading,  setLoading]  = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  /* Initialise map — StrictMode-safe: clear _leaflet_id before each init */
+  /* Initialise map instance */
   useEffect(() => {
     const container = mapContainerRef.current;
     if (!container) return;
 
-    // React 18 StrictMode mounts → unmounts → remounts. After map.remove()
-    // Leaflet leaves _leaflet_id on the DOM node, causing the second mount to
-    // throw silently. Deleting it lets Leaflet reinitialise cleanly.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (container as any)._leaflet_id;
+    // Clean up any stale Leaflet id
+    if ((container as any)._leaflet_id) {
+      delete (container as any)._leaflet_id;
+    }
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
 
     const map = L.map(container, {
-      zoomControl:     true,
-      scrollWheelZoom: false,
-      preferCanvas:    true,
+      zoomControl: true,
+      scrollWheelZoom: true,
+      preferCanvas: true,
     }).setView([22.9734, 78.6569], 5);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -38,14 +43,23 @@ export const GISMap: React.FC = () => {
       maxZoom: 18,
     }).addTo(map);
 
+    const layer = L.featureGroup().addTo(map);
     mapInstanceRef.current = map;
-    markerLayerRef.current = L.featureGroup().addTo(map);
+    markerLayerRef.current = layer;
 
-    // Tell Leaflet the real rendered container size after the browser paints
-    const t = setTimeout(() => map.invalidateSize(), 300);
+    // Ensure Leaflet recalculates actual container geometry after paint
+    const t = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    window.addEventListener('resize', handleResize);
 
     return () => {
       clearTimeout(t);
+      window.removeEventListener('resize', handleResize);
       map.remove();
       mapInstanceRef.current = null;
       markerLayerRef.current = null;
@@ -60,9 +74,9 @@ export const GISMap: React.FC = () => {
     });
   }, []);
 
-  /* Add / refresh markers whenever projects change */
+  /* Add / refresh markers whenever projects or map changes */
   useEffect(() => {
-    const map   = mapInstanceRef.current;
+    const map = mapInstanceRef.current;
     const layer = markerLayerRef.current;
     if (!map || !layer || projects.length === 0) return;
 
@@ -70,9 +84,9 @@ export const GISMap: React.FC = () => {
     const bounds = L.latLngBounds([]);
 
     projects.slice(0, 500).forEach(project => {
-      const lat = project.latitude;
-      const lng = project.longitude;
-      if (typeof lat !== 'number' || typeof lng !== 'number') return;
+      const lat = Number(project.latitude);
+      const lng = Number(project.longitude);
+      if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return;
 
       const latlng: L.LatLngExpression = [lat, lng];
       bounds.extend(latlng as [number, number]);
@@ -80,24 +94,30 @@ export const GISMap: React.FC = () => {
       const color = RISK_COLOR[project.risk_category] ?? '#64748b';
 
       L.circleMarker(latlng, {
-        radius:      8,
+        radius: 7,
         color,
-        weight:      2,
-        fillColor:   color,
-        fillOpacity: 0.55,
+        weight: 2,
+        fillColor: color,
+        fillOpacity: 0.6,
       })
         .bindPopup(
-          `<div style="min-width:180px">
-            <strong style="font-size:13px">${project.project_name}</strong><br/>
-            <span style="color:#64748b;font-size:12px">${project.district}, ${project.state}</span><br/>
-            <span style="color:${color};font-weight:600">${project.risk_category}</span>
-            &nbsp;&middot;&nbsp;${project.predicted_delay_days} day delay
+          `<div style="font-family:sans-serif; min-width:180px; padding:2px">
+            <strong style="font-size:13px; color:#0f172a">${project.project_name}</strong><br/>
+            <span style="color:#64748b; font-size:12px">${project.district}, ${project.state}</span><br/>
+            <div style="margin-top:4px; font-size:12px">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${color}; margin-right:4px"></span>
+              <strong>${project.risk_category}</strong> &middot; ${project.predicted_delay_days} day delay
+            </div>
           </div>`,
         )
         .addTo(layer);
     });
 
-    if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
+    if (bounds.isValid()) {
+      map.fitBounds(bounds.pad(0.08));
+    }
+
+    map.invalidateSize();
   }, [projects]);
 
   return (
@@ -112,16 +132,18 @@ export const GISMap: React.FC = () => {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        {/* Map panel — overflow:hidden must be on the outer wrapper, NOT on the div Leaflet mounts into */}
-        <div
-          className="rounded-[24px] border border-slate-200 bg-white shadow-sm overflow-hidden"
-          style={{ height: '640px' }}
-        >
-          <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+      <section className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Map Panel */}
+        <div className="w-full lg:flex-1 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm relative z-0">
+          <div
+            ref={mapContainerRef}
+            className="w-full rounded-[18px] overflow-hidden"
+            style={{ height: '640px', minHeight: '640px', width: '100%' }}
+          />
         </div>
 
-        <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+        {/* Legend & Details Panel */}
+        <div className="w-full lg:w-[380px] xl:w-[420px] rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm flex-shrink-0">
           <h2 className="text-base font-semibold text-slate-900">Map legend</h2>
           <div className="mt-4 space-y-3 text-sm text-slate-700">
             {Object.entries(RISK_COLOR).map(([label, color]) => (
@@ -138,8 +160,8 @@ export const GISMap: React.FC = () => {
               : `Showing ${Math.min(projects.length, 500).toLocaleString()} of ${projects.length.toLocaleString()} projects on the map.`}
           </div>
 
-          <div className="mt-6 space-y-3 max-h-[340px] overflow-auto pr-1">
-            {projects.slice(0, 12).map(project => (
+          <div className="mt-6 space-y-3 max-h-[380px] overflow-auto pr-1">
+            {projects.slice(0, 15).map(project => (
               <div key={project.project_id} className="rounded-2xl border border-slate-100 bg-white px-4 py-3">
                 <div className="font-medium text-slate-900 truncate text-sm">{project.project_name}</div>
                 <div className="text-xs text-slate-500 mt-0.5">{project.district}, {project.state}</div>
@@ -148,7 +170,7 @@ export const GISMap: React.FC = () => {
                     className="h-2 w-2 rounded-full flex-shrink-0"
                     style={{ background: RISK_COLOR[project.risk_category] ?? '#64748b' }}
                   />
-                  <span className="text-slate-600">{project.risk_category} · {project.predicted_delay_days} days</span>
+                  <span className="text-slate-600">{project.risk_category} · {project.predicted_delay_days} day delay</span>
                 </div>
               </div>
             ))}
