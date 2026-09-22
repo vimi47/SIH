@@ -16,7 +16,7 @@ import { RequireAuth } from './components/auth/RequireAuth';
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <HashRouter>
+      <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route
