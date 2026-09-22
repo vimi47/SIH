@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
+import { BhoomiCopilot } from '../copilot/BhoomiCopilot';
 
 export const Layout: React.FC = () => {
   return (
@@ -11,6 +12,7 @@ export const Layout: React.FC = () => {
         <main className="flex-1 px-4 pb-6 pt-3 md:px-8 md:pb-10 md:pt-5">
           <Outlet />
         </main>
+        <BhoomiCopilot />
       </div>
     </div>
   );

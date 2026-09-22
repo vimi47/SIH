@@ -210,10 +210,10 @@ export const Dashboard: React.FC = () => {
       </section>
 
       {/* Priority + Alerts */}
-      <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+      <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] items-start">
 
         {/* Priority Projects */}
-        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm min-w-0">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div>
               <h2 className="text-base font-semibold text-slate-900">
@@ -227,7 +227,7 @@ export const Dashboard: React.FC = () => {
 
             <Link
               to="/projects"
-              className="text-sm font-semibold text-blue-700"
+              className="text-sm font-semibold text-blue-700 hover:text-blue-800"
             >
               Open register
             </Link>
@@ -238,14 +238,14 @@ export const Dashboard: React.FC = () => {
               <Link
                 key={project.project_id}
                 to={`/projects/${project.project_id}`}
-                className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-slate-50"
+                className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-slate-50 min-w-0"
               >
-                <div className="min-w-0">
-                  <div className="truncate font-medium text-slate-900">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium text-slate-900 text-sm">
                     {project.project_name}
                   </div>
 
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     {project.state} · {project.district}
                   </div>
                 </div>
@@ -265,10 +265,10 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Right column */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0 overflow-hidden">
 
           {/* How to use */}
-          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm min-w-0">
             <h2 className="text-base font-semibold text-slate-900">
               How to use
             </h2>
@@ -289,36 +289,35 @@ export const Dashboard: React.FC = () => {
           </div>
 
           {/* Alerts */}
-          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm min-w-0 overflow-hidden">
             <h2 className="text-base font-semibold text-slate-900">
               Alerts
             </h2>
 
-            <div className="mt-3 space-y-3">
+            <div className="mt-3 space-y-3 min-w-0">
               {warnings.slice(0, 2).map((warning: any) => (
                 <Link
                   key={warning.id}
                   to={`/projects/${warning.projectId}`}
-                  className="block rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 transition-colors hover:bg-white"
+                  className="block rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 transition-colors hover:bg-white min-w-0 overflow-hidden"
                 >
-                  <div className="truncate text-sm font-medium text-slate-900">
+                  <div className="truncate text-sm font-medium text-slate-900 block">
                     {warning.projectName}
                   </div>
 
-                  <div className="mt-1 line-clamp-2 text-xs text-slate-500">
+                  <div className="mt-1 line-clamp-2 text-xs text-slate-500 break-words leading-relaxed">
                     {warning.trigger}
                   </div>
                 </Link>
               ))}
 
               {interventions.length > 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-600">
+                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-600 truncate">
                   {interventions.length} intervention records available.
                 </div>
               )}
             </div>
           </div>
-
         </div>
       </section>
     </div>
